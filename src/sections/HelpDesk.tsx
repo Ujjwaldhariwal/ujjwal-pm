@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap, prefersReducedMotion } from '../lib/motion'
 import { EMAIL } from '../data'
+import { haptic } from '../lib/haptics'
 
 const STAGES = [
   { b: 'Received', s: 'today' },
@@ -29,13 +30,14 @@ export default function HelpDesk() {
 
   useEffect(() => {
     if (!filed) return
+    const buzz = window.setTimeout(() => haptic.stamp(), 380) // lands with the stamp
     const el = stamp.current
     if (el && !prefersReducedMotion()) {
       gsap.fromTo(el, { scale: 2.4, opacity: 0, rotate: -30 }, { scale: 1, opacity: 0.9, rotate: -14, duration: 0.42, ease: 'power4.in' })
       gsap.fromTo(sheet.current, { x: 0 }, { keyframes: { x: [0, -4, 3, -2, 0] }, duration: 0.3, delay: 0.4 })
     }
     const ids = [1, 2, 3].map((n) => window.setTimeout(() => setStage(n), 650 + n * 520))
-    return () => ids.forEach(clearTimeout)
+    return () => { ids.forEach(clearTimeout); clearTimeout(buzz) }
   }, [filed])
 
   const summary = () =>

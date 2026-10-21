@@ -24,6 +24,7 @@
 * { box-sizing: border-box; margin: 0; }
 html { background: var(--navy); overflow-x: clip; }
 html.lenis, html.lenis body { height: auto; }
+main { overflow-x: clip; }
 body { background: var(--paper); color: var(--navy); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: clip; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 a { color: inherit; }
@@ -82,8 +83,9 @@ a { color: inherit; }
   .box .ms { display: none; }
   .s { font-size: 16px; flex-wrap: wrap; padding: 12px 18px; }
   .s .proof { margin-left: 30px; width: 100%; }
-  .topnav div { gap: 14px; font-size: 14px; }
-  .topnav div button:not(:last-child) { display: none; }
+  .topnav .me { font-size: 16px; }
+  .topnav div { gap: 2px; font-size: 14px; }
+  .topnav div button { padding: 12px 8px; min-height: 44px; }
 }
 
 /* ---------- line ---------- */
@@ -91,7 +93,7 @@ a { color: inherit; }
 .line-head { padding: 0 var(--pad); display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
 .line-head h2 { font-size: clamp(40px, 4vw, 56px); font-weight: 900; letter-spacing: -.025em; line-height: 1; }
 .line-head p { font-size: 18px; color: var(--muted); max-width: 440px; line-height: 1.5; }
-.map-scroll { overflow-x: auto; scrollbar-width: none; }
+.map-scroll { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
 .map { display: block; width: 100%; min-width: 1000px; height: auto; }
 .ln { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .ln.route { stroke: #C9D6EA; stroke-width: 14; }
@@ -115,9 +117,7 @@ a { color: inherit; }
 .interchange .core { fill: var(--navy); stroke: none; }
 .future .ring { fill: #fff; stroke: var(--navy); stroke-width: 4; }
 .future .goal { fill: var(--yellow); stroke: var(--navy); stroke-width: 4; }
-.train rect { fill: var(--navy); }
-.train .win { fill: var(--yellow); }
-.train .lamp { fill: #FFF6C8; }
+.metro-car { filter: drop-shadow(0 3px 4px rgba(12,35,64,.25)); }
 .case { margin: 10px var(--pad) 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 48px; padding: 36px 40px; border-radius: 20px; background: #fff; box-shadow: 0 0 0 1px var(--line-grey), 0 18px 40px rgba(12,35,64,.06); }
 .crumb { font-size: 15px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
 .crumb i { width: 14px; height: 14px; border-radius: 50%; border: 3.5px solid var(--navy); display: inline-block; }

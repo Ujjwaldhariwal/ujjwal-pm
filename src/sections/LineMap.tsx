@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap, prefersReducedMotion, scrollToId, scrollToY, ScrollTrigger } from '../lib/motion'
 import { STATIONS } from '../data'
+import { haptic } from '../lib/haptics'
 
 const Y = 250
 const MAIN = `M70 ${Y} L960 ${Y} L1050 ${Y - 90} L1370 ${Y - 90}`
@@ -65,9 +66,9 @@ export default function LineMap({ station, onStation, jump }: Props) {
     const trig = ScrollTrigger.create({
       trigger: sec.current,
       start: 'top top',
-      end: '+=1600',
+      end: '+=1200',
       pin: true,
-      scrub: 0.6,
+      scrub: 0.15, // near 1:1 with the wheel (was 0.6)
       onUpdate: (s) => {
         if (locked.current) return
         fromScroll.current = true
@@ -77,7 +78,7 @@ export default function LineMap({ station, onStation, jump }: Props) {
         const x = route.current!.getPointAtLength(L).x
         const passed = MAIN_IDS.map((id) => STATIONS.find((s) => s.id === id)!).filter((s) => s.x <= x + 4)
         const last = passed[passed.length - 1]
-        if (last && last.id !== stationRef.current) onStation(last.id)
+        if (last && last.id !== stationRef.current) { haptic.tick(); onStation(last.id) }
         else fromScroll.current = false
       },
     })
@@ -147,7 +148,7 @@ export default function LineMap({ station, onStation, jump }: Props) {
                 onClick={() => onStation(s.id)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onStation(s.id))}
               >
-                <circle cx={s.x} cy={s.y} r="26" className="hit" />
+                <circle cx={s.x} cy={s.y} r="36" className="hit" />
                 <circle cx={s.x} cy={s.y} r={on ? 15 : 11} className="ring" />
                 <text x={tx} y={s.line === 'freelance' ? s.y - 4 : ty} textAnchor={anchor} className="nm">{s.name}</text>
                 <text x={tx} y={(s.line === 'freelance' ? s.y - 4 : ty) + 21} textAnchor={anchor} className="ds">{s.short}</text>
@@ -170,12 +171,40 @@ export default function LineMap({ station, onStation, jump }: Props) {
             <text x="1384" y={Y - 18} textAnchor="end" className="ds">your platform, next stop</text>
           </g>
 
-          <g ref={train} className="train" aria-hidden="true">
-            <rect x="-34" y="-17" width="68" height="34" rx="11" />
-            <rect x="-24" y="-8" width="13" height="11" rx="2" className="win" />
-            <rect x="-7" y="-8" width="13" height="11" rx="2" className="win" />
-            <rect x="10" y="-8" width="13" height="11" rx="2" className="win" />
-            <circle cx="30" cy="0" r="3" className="lamp" />
+          <g ref={train} className="train metro-car" aria-hidden="true">
+            <defs>
+              <linearGradient id="trainBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="60%" stopColor="#E2E8F0" />
+                <stop offset="100%" stopColor="#94A3B8" />
+              </linearGradient>
+              <linearGradient id="cabGlass" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#0F172A" />
+                <stop offset="70%" stopColor="#1E3A8A" />
+                <stop offset="100%" stopColor="#38BDF8" />
+              </linearGradient>
+              <filter id="headlightGlow" x="-200%" y="-200%" width="500%" height="500%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            {/* bogies */}
+            <rect x="-30" y="15" width="16" height="5" rx="2" fill="#1E293B" />
+            <rect x="14" y="15" width="16" height="5" rx="2" fill="#1E293B" />
+            {/* body with a rounded driving cab at the front */}
+            <path d="M -38 -16 L 22 -16 Q 44 -16 46 0 Q 44 16 22 16 L -38 16 Q -42 16 -42 0 Q -42 -16 -38 -16 Z" fill="url(#trainBody)" stroke="#64748B" strokeWidth="1.2" />
+            {/* line livery: yellow over blue */}
+            <path d="M -41 4 L 44 4" stroke="#F4C20D" strokeWidth="3" />
+            <path d="M -41 7.5 L 42 7.5" stroke="#1F5FAD" strokeWidth="1.5" />
+            {/* windscreen */}
+            <path d="M 22 -12 L 36 -12 Q 41 -12 42 -4 L 42 0 L 22 0 Z" fill="url(#cabGlass)" />
+            {/* passenger windows */}
+            <rect x="-34" y="-11" width="14" height="9" rx="2.5" fill="#0F172A" />
+            <rect x="-16" y="-11" width="14" height="9" rx="2.5" fill="#0F172A" />
+            <rect x="2" y="-11" width="14" height="9" rx="2.5" fill="#0F172A" />
+            {/* headlamps */}
+            <circle cx="44" cy="-5" r="2" fill="#FEF08A" filter="url(#headlightGlow)" />
+            <circle cx="44" cy="10" r="2" fill="#FEF08A" filter="url(#headlightGlow)" />
           </g>
         </svg>
       </div>
