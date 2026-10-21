@@ -6,6 +6,7 @@ import { QUERIES, STATIONS } from '../data'
 
 const PROMPT = 'I need a PM who can'
 const DEMO = ['find the real pain', 'run stakeholder interviews', 'decide what to automate']
+const SLOTS = 4
 
 function Flap({ text }: { text: string }) {
   const ref = useRef<HTMLSpanElement>(null)
@@ -53,16 +54,21 @@ export default function Sign({ onPick }: { onPick: (id: string) => void }) {
   }, [])
 
   const term = (touched ? q : demo).trim().toLowerCase()
-  const results = useMemo(() => {
-    if (!term) return QUERIES.slice(0, 4)
-    const words = term.split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w))
-    return QUERIES.map((r) => {
+  const words = useMemo(() => term.split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w)), [term])
+
+  // Rank every suggestion instead of filtering. The list always shows exactly SLOTS rows,
+  // so typing reorders it in place and nothing below the planner ever moves.
+  const ranked = useMemo(() => {
+    return QUERIES.map((r, order) => {
       const st = STATIONS.find((s) => s.id === r.station)!
       const hay = (r.text + ' ' + st.tags.join(' ') + ' ' + st.name).toLowerCase()
       const score = words.reduce((a, w) => a + (hay.includes(w) ? 2 : 0) + (r.text.toLowerCase().startsWith(w) ? 1 : 0), 0)
-      return { r, score }
-    }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 4).map((x) => x.r)
-  }, [term])
+      return { r, score, order }
+    }).sort((a, b) => b.score - a.score || a.order - b.order)
+  }, [words])
+  const results = ranked.slice(0, SLOTS)
+  const matches = words.length ? ranked.filter((x) => x.score > 0).length : 0
+  const rankOf = new Map(ranked.map((x, i) => [x.r.text, i]))
 
   useEffect(() => setActive(0), [term])
 
@@ -70,7 +76,6 @@ export default function Sign({ onPick }: { onPick: (id: string) => void }) {
 
   const mark = (text: string) => {
     if (!term) return <span className="k">{text}</span>
-    const words = term.split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w))
     const re = words.length ? new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi') : null
     if (!re) return <span className="k">{text}</span>
     return <span className="k">{text.split(re).map((p, i) => (i % 2 ? <b key={i}>{p}</b> : p))}</span>
@@ -133,24 +138,31 @@ export default function Sign({ onPick }: { onPick: (id: string) => void }) {
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(results.length - 1, a + 1)) }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(0, a - 1)) }
-                if (e.key === 'Enter' && results[active]) go(results[active].station)
+                if (e.key === 'Enter' && results[active]) go(results[active].r.station)
               }}
             />
           </div>
-          <span className="ms">{results.length ? `${results.length} station${results.length > 1 ? 's' : ''} match` : 'no stop yet'}</span>
+          <span className="ms" aria-live="polite">
+            {!words.length ? 'top stations' : matches ? `${matches} station${matches > 1 ? 's' : ''} match` : 'no exact stop, closest shown'}
+          </span>
         </div>
-        <ul className="drop" id="planner-list" role="listbox">
-          {results.map((r, i) => {
+        <ul className="drop" id="planner-list" role="listbox" style={{ ['--slots' as string]: SLOTS }}>
+          {QUERIES.map((r) => {
+            const rank = rankOf.get(r.text)!
+            const shown = rank < SLOTS
+            const hit = !words.length || (ranked[rank]?.score ?? 0) > 0
             const st = STATIONS.find((s) => s.id === r.station)!
             return (
               <li
                 key={r.text}
-                id={`opt-${i}`}
-                role="option"
-                aria-selected={i === active}
-                className={`s ${i === active ? 'on' : ''}`}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => go(r.station)}
+                id={shown ? `opt-${rank}` : undefined}
+                role={shown ? 'option' : undefined}
+                aria-hidden={shown ? undefined : true}
+                aria-selected={shown ? rank === active : undefined}
+                className={`s ${shown && rank === active ? 'on' : ''} ${hit ? '' : 'dim'} ${shown ? '' : 'out'}`}
+                style={{ transform: `translateY(calc(var(--row) * ${Math.min(rank, SLOTS)}))` }}
+                onMouseEnter={() => shown && setActive(rank)}
+                onClick={() => shown && go(r.station)}
               >
                 <span className={`dot ${st.line}`} />
                 <span className="txt"><span className="pm">a PM who can</span> {mark(r.text)}</span>
@@ -158,9 +170,6 @@ export default function Sign({ onPick }: { onPick: (id: string) => void }) {
               </li>
             )
           })}
-          {!results.length && (
-            <li className="empty">No station for that yet. Try “users”, “metrics”, “interviews” or “automation”.</li>
-          )}
         </ul>
       </div>
     </section>
