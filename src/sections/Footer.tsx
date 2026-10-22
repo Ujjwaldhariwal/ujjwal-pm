@@ -19,7 +19,7 @@ export default function Footer() {
       <div className="bf-r">
         <p>Open to Associate and Technical PM roles</p>
         <p>
-          <a href="https://linkedin.com/in/ujjwal-dhariwal" target="_blank" rel="noreferrer">LinkedIn</a>
+          <a href="https://www.linkedin.com/in/ujjwal-d-68880222a/" target="_blank" rel="noreferrer">LinkedIn</a>
           <a href="https://github.com/Ujjwaldhariwal" target="_blank" rel="noreferrer">GitHub</a>
         </p>
         <p>Noida / Gurugram</p>
